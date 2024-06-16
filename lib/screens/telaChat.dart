@@ -12,6 +12,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<String> messages = [];
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final List<List<String>> savedChats = [];
   String? userName;
 
   final List<String> botResponses = [
@@ -19,32 +20,7 @@ class _ChatScreenState extends State<ChatScreen> {
     "Espero que você esteja tendo um ótimo dia!",
     "Interessante... Continue.",
     "Desculpe, eu não entendi isso.",
-    "Claro, eu posso fazer isso!",
-    "Poderia elaborar mais sobre isso?",
-    "Entendi. O que mais você gostaria de saber?",
-    "Isso soa fascinante!",
-    "Vou precisar de mais informações para ajudá-lo.",
-    "Obrigado por compartilhar isso comigo.",
-    "Que legal! Conte-me mais.",
-    "Posso ajudar com mais alguma coisa?",
-    "Isso é algo sobre o qual vale a pena pensar.",
-    "Como você chegou a essa conclusão?",
-    "Você tem algum exemplo para ilustrar?",
-    "Essa é uma ótima pergunta!",
-    "Isso é um ponto interessante.",
-    "Como posso ser mais útil?",
-    "Estou aqui para ajudar!",
-    "Vamos resolver isso juntos.",
-    "Pode me dar mais detalhes?",
-    "O que você acha disso?",
-    "Vamos em frente.",
-    "Estou aqui para ouvir.",
-    "Vamos descobrir isso juntos.",
-    "Isso é muito útil, obrigado.",
-    "Como posso tornar isso mais claro para você?",
-    "Qual é o próximo passo?",
-    "Vamos tentar outra abordagem.",
-    "Posso te ajudar com mais alguma coisa?",
+    "Claro, eu posso fazer isso!"
   ];
 
   @override
@@ -65,7 +41,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _showNameInputDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false, // Não permite fechar o modal tocando fora dele
+      barrierDismissible: false,
       builder: (BuildContext context) {
         final TextEditingController nameController = TextEditingController();
         return AlertDialog(
@@ -117,69 +93,136 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  void _showSaveChatDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Salvar Conversa"),
+          content: const Text("Você deseja salvar esta conversa?"),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Não"),
+              onPressed: () {
+                setState(() {
+                  messages.clear();
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              child: const Text("Sim"),
+              onPressed: () {
+                setState(() {
+                  savedChats.add(List.from(messages));
+                  messages.clear();
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _recoverChat(List<String> chat) {
+    setState(() {
+      messages.clear();
+      messages.addAll(chat);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Chatbot Flutter"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _showSaveChatDialog,
+          ),
+        ],
       ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
+      body: Row(
+        children: [
+          Container(
+            width: 200,
+            color: Colors.grey[200],
             child: ListView.builder(
-              controller: _scrollController,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10.0, vertical: 20.0),
-              itemCount: messages.length,
+              itemCount: savedChats.length,
               itemBuilder: (context, index) {
-                bool isUserMessage = messages[index].startsWith("$userName:");
-                return Align(
-                  alignment: isUserMessage
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Column(
-                    crossAxisAlignment: isUserMessage
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isUserMessage ? userName! : "Bot",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 5.0, horizontal: 10.0),
-                        margin: const EdgeInsets.symmetric(vertical: 2.0),
-                        decoration: BoxDecoration(
-                          color: isUserMessage
-                              ? Colors.blue[100]
-                              : Colors.grey[200],
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                        child: Text(messages[index]),
-                      ),
-                    ],
-                  ),
+                return ListTile(
+                  title: Text('Conversa ${index + 1}'),
+                  onTap: () => _recoverChat(savedChats[index]),
                 );
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
+          Expanded(
+            child: Column(
               children: <Widget>[
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    onSubmitted: _handleSubmitted,
-                    decoration: const InputDecoration(
-                      hintText: "Digite sua mensagem...",
-                    ),
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10.0, vertical: 20.0),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      bool isUserMessage =
+                          messages[index].startsWith("$userName:");
+                      return Align(
+                        alignment: isUserMessage
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Column(
+                          crossAxisAlignment: isUserMessage
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isUserMessage ? userName! : "Bot",
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 5.0, horizontal: 10.0),
+                              margin: const EdgeInsets.symmetric(vertical: 2.0),
+                              decoration: BoxDecoration(
+                                color: isUserMessage
+                                    ? Colors.blue[100]
+                                    : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(10.0),
+                              ),
+                              child: Text(messages[index]),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: () => _handleSubmitted(_controller.text),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: TextField(
+                          controller: _controller,
+                          onSubmitted: _handleSubmitted,
+                          decoration: const InputDecoration(
+                            hintText: "Digite sua mensagem...",
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.send),
+                        onPressed: () => _handleSubmitted(_controller.text),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
